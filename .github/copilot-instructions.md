@@ -1,32 +1,71 @@
-# Copilot instructions
+# Copilot Instructions
 
-Always signed commit messages are required for all commits.
+## Repository Purpose
 
-## Language Policy
+This is a **meta-repository** of reusable AI instructions, skills, agents, plugins, and collections for GitHub Copilot and AI coding tools. It is NOT a typical application codebase — there is no runtime code to build or test. The primary artifact types are Markdown-based instruction files and YAML configuration files.
 
-All instructions and prompts in this repository must be written in English. This applies to:
-- All rule and instruction files in `instructions/`
-- All documentation and code comments intended for contributors
+## Repository Structure
 
-## Development code generation
+| Directory | Purpose |
+|---|---|
+| `instructions/` | `.instructions.md` files with coding standards, applied via `applyTo` front-matter glob |
+| `skills/` | Self-contained `SKILL.md` packages with bundled resources (scripts, templates, references) |
+| `agents/` | `.agent.md` files defining custom AI personas |
+| `plugins/` | `plugin.yaml` bundles grouping related skills for installation |
+| `collections/` | YAML files grouping instructions/prompts for APM consumption |
+| `website/` | Astro static documentation site |
+| `scripts/` | Maintenance scripts (e.g., `validate-collection-links.sh`) |
 
-When working with C# code, follow these instructions very carefully.
+## Content Authoring Rules
 
-It is **EXTREMELY important that you follow the instructions in the rule files very carefully.**
+### Instructions (`instructions/*.instructions.md`)
+- Must include YAML front-matter with `applyTo` (file glob) and `description` fields.
+- Use imperative language: "Do", "Use", "Avoid".
+- Structure: Title → Purpose → Rules/Guidelines → Best Practices → Examples → References (optional).
+- See [instructions/meta-instructions.instructions.md](instructions/meta-instructions.instructions.md) for the authoritative template.
 
-### Workflow implementation
+### Skills (`skills/<name>/SKILL.md`)
+- Front-matter requires `name` (lowercase kebab-case, no underscores/spaces) and `description` (must start with "Use when").
+- Include "When to Use" and "When NOT to Use" sections to prevent over-application.
+- Prefer concise examples over verbose prose — the context window is shared with conversation history.
+- See [skills/skill-creator/SKILL.md](skills/skill-creator/SKILL.md) for the creating/updating guide.
+- See [skills/migrating-prompts-to-skills/SKILL.md](skills/migrating-prompts-to-skills/SKILL.md) when converting `.prompt.md` or `.instructions.md` to skill format.
 
-**IMPORTANT:** Always follow these steps when implementing new features:
+### Agents (`agents/*.agent.md`)
+- Front-matter: `name`, `description`, `tags`.
+- Must define explicit scope limitations (e.g., the Architect agent restricts itself to `.md` files only).
 
-1. Consult any relevant instructions files listed below and start by listing which rule files have been used to guide the implementation (e.g. `Instructions used: [minimal-api.instructions.md, domain-driven-design.instructions.md]`).
+### Collections (`collections/*.yml`)
+- Reference paths as they appear in the consuming project (typically under `.github/instructions/`).
+- Run `scripts/validate-collection-links.sh` to verify all referenced paths exist before committing.
 
-2. Follow TDD when it is possible. Always start new changes by writing new test cases (or changing existing tests). 
-Remember to consult [Unit and Integration Tests](./instructions/unit-and-integration-tests.instructions.md) for details on how to write tests.
+### Plugins (`plugins/<name>/plugin.yaml`)
+- Lists `skills` by name; skills must exist in `skills/` or the plugin's own `skills/` subfolder.
 
-3. Always run `dotnet test` or `dotnet build` to verify that all tests pass before committing your changes. 
-Don't ask to run the tests, just do it. If you are not sure how to run the tests, ask for help. 
-You can also use `dotnet watch test` to run the tests automatically when you change the code.
+## Language & Commit Policy
 
-4. Fix any compiler warnings and errors before going to the next step.
+- All content must be written in **English**.
+- All commits must be **signed** and follow **Conventional Commits**: `<type>[scope]: <description>` (max 72 chars on first line).
+  - Types: `feat`, `fix`, `docs`, `refactor`, `chore`, `ci`
+  - Example: `feat(skills): add rg-code-search skill`
 
-When you see paths like `/[project]/features/[feature]/` in rules, replace [project] with the name of the project you are working on (e.g. `Ordering`), and `[feature]` with the name of the feature you are working on (e.g. `VerifyOrAddPayment`).
+## Website Development
+
+Commands run from the `website/` directory:
+
+```sh
+npm install       # Install dependencies
+npm run dev       # Start dev server at localhost:4321
+npm run build     # Build to ./dist/
+```
+
+## C# Code Generation (when producing output for consumers of this repo)
+
+When generating C# code guided by instructions in this repo, consult and apply in order:
+
+1. **DDD** — [instructions/domain-driven-design.instructions.md](instructions/domain-driven-design.instructions.md): no base class inheritance, factory methods (`Order.Create(...)`), strongly typed IDs, business-intent method names (never CRUD verbs like Get/Set/Update/Delete).
+2. **Clean Architecture** — [skills/clean-architecture-dotnet/SKILL.md](skills/clean-architecture-dotnet/SKILL.md): four layers (Domain → Application → Infrastructure → API), CQRS without MediatR, handler discovery by convention.
+3. **Testing** — [instructions/unit-and-integration-tests.instructions.md](instructions/unit-and-integration-tests.instructions.md): TDD-first; run `dotnet test` before committing (do not ask, just run it).
+4. Always start your response by listing which instruction files guided the implementation.
+
+Path tokens in rules: replace `[project]` and `[feature]` with actual names (e.g., `Ordering`, `PlaceOrder`).
